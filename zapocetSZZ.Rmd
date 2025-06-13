@@ -1,0 +1,142 @@
+---
+title: "Okruhy k SZZ"
+output: 
+  html_document:
+    toc: true
+    #toc_float: true
+    #df_print: paged 
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+library(dplyr) 
+library(ggplot2)
+library("readxl")
+library(stringr)
+library(tidyr)
+library(knitr)
+```
+
+## Úkol 1 
+
+Údaje jsou vypsány pouze pro prvních 5 studentů (dle abecedy), více lze vypsat změnou podmínky for cyklu
+
+```{r, echo=FALSE, results = "asis"}
+options(knitr.kable.NA = '')
+df_tp <- read_excel("SZZTP.xlsx")
+df_pp <- read_excel("SZZPP.xlsx")
+df_vp <- read_excel("SZZVP.xlsx")
+
+df_okruhyTP <- read_excel("PrehledOkruhu.xlsx", sheet = 1)
+df_okruhyPP <- read_excel("PrehledOkruhu.xlsx", sheet = 2)
+df_okruhyVP <- read_excel("PrehledOkruhu.xlsx", sheet = 3)
+
+df_tp$name <- paste(df_tp$Příjmení, df_tp$Jméno)
+df_jmena <- df_tp %>% group_by(name) %>% summarise()
+
+df_pp$name <- paste(df_pp$Příjmení, df_pp$Jméno)
+df_vp$name <- paste(df_vp$Příjmení, df_vp$Jméno)
+
+#zacatek for cyklu skze jmena 
+#for(i in seq(1,nrow(df_jmena))){
+for(i in seq(1,5)){
+  cat("KI/SZZTP: Teoretické základy informatiky (")
+  cat(df_jmena$name[i]) 
+  cat(")")
+  df_prac <- df_tp %>% group_by(name) %>% filter(name == df_jmena$name[1]) %>% ungroup() %>% select(Volba)
+  df_prac <- df_prac %>% separate(Volba, into=c("Cislo", "Volba"), sep="\\. ", convert = TRUE ) %>% arrange(Cislo) %>% distinct()
+  for (j in seq(1,nrow(df_prac))) {
+    df_prac$Cislo[j] <- j
+  }
+  print(kable(full_join(df_okruhyTP, df_prac, by=c("text"="Volba")) %>% relocate(Cislo, .before=i), col.names = NULL))
+ 
+  cat("KI/SZZPP: Aplikovaná informatika – povinný základ (")
+  cat(df_jmena$name[i])
+  cat(")")
+  df_prac <- df_pp %>% group_by(name) %>% filter(name == df_jmena$name[1]) %>% ungroup() %>% select(Volba)
+  df_prac <- df_prac %>% separate(Volba, into=c("Cislo", "Volba"), sep="\\. ", convert = TRUE ) %>% arrange(Cislo) %>% distinct()
+  for (j in seq(1,nrow(df_prac))) {
+    df_prac$Cislo[j] <- j
+  }
+  print(kable(full_join(df_okruhyPP, df_prac, by=c("text"="Volba")) %>% relocate(Cislo, .before=i), col.names = NULL))
+  
+  cat("KI/SZZVP: Aplikovaná informatika – volitelné bloky (")
+  cat(df_jmena$name[i])
+  cat(")")
+  df_prac <- df_vp %>% group_by(name) %>% filter(name == df_jmena$name[1]) %>% ungroup() %>% select(Volba)
+  df_prac <- df_prac %>% separate(Volba, into=c("Cislo", "Volba"), sep="\\. ", convert = TRUE ) %>% arrange(Cislo) %>% distinct()
+  for (j in seq(1,nrow(df_prac))) {
+    df_prac$Cislo[j] <- j
+  }
+  print(kable(full_join(df_okruhyVP, df_prac, by=c("text"="Volba")) %>% relocate(Cislo, .before=i), col.names = NULL))
+}
+
+```
+
+## Úkol 2
+
+### Počty zvolení otázek v rámci SZZTP
+
+```{r, echo=FALSE, results = "asis"}
+df_okruhyTP[,"Zvoleno"] = NA
+
+df_tp2 <- df_tp %>% separate(Volba, into=c("Cislo", "Volba"), sep="\\. ", convert = TRUE )
+
+for (i in seq(1, nrow(df_okruhyTP))) {
+  df_okruhyTP$Zvoleno[i] <- sum(df_tp2$Volba == df_okruhyTP$text[i])
+}
+
+print(kable(df_okruhyTP %>% arrange(desc(Zvoleno)) %>% select(text, Zvoleno) , col.names = NULL))
+
+ggplot(data=df_okruhyTP, aes(x=i, y=Zvoleno)) +
+  geom_bar(stat="identity", width=0.5) + labs(x = "Číslo otázky", y = "Počet zvolení otázky", title = "Počty zvolení otázek v rámci SZZTP") 
+```
+
+V rámci SZZTP byla nejoblíbenější otázka číslo 2. Nejméně oblíbené byly otázky: 
+```{r, echo=FALSE, results = "asis"}
+print(kable(df_okruhyTP %>% arrange(Zvoleno) %>% select(text, Zvoleno) %>% head(5) , col.names = NULL))
+```
+
+### Počty zvolení otázek v rámci SZZPP
+
+```{r, echo=FALSE, results = "asis"}
+df_okruhyPP[,"Zvoleno"] = NA
+
+df_pp2 <- df_pp %>% separate(Volba, into=c("Cislo", "Volba"), sep="\\. ", convert = TRUE )
+
+for (i in seq(1, nrow(df_okruhyPP))) {
+  df_okruhyPP$Zvoleno[i] <- sum(df_pp2$Volba == df_okruhyPP$text[i])
+}
+
+print(kable(df_okruhyPP %>% arrange(desc(Zvoleno)) %>% select(text, Zvoleno) , col.names = NULL))
+
+ggplot(data=df_okruhyPP, aes(x=i, y=Zvoleno)) +
+  geom_bar(stat="identity", width=0.5) + labs(x = "Číslo otázky", y = "Počet zvolení otázky", title = "Počty zvolení otázek v rámci SZZPP") 
+```
+
+Nejméně oblíbené byly otázky: 
+```{r, echo=FALSE, results = "asis"}
+print(kable(df_okruhyPP %>% arrange(Zvoleno) %>% select(text, Zvoleno) %>% head(5) , col.names = NULL))
+```
+
+### Počty zvolení otázek v rámci SZZVP
+
+```{r, echo=FALSE, results = "asis"}
+df_okruhyVP[,"Zvoleno"] = NA
+
+df_vp2 <- df_vp %>% separate(Volba, into=c("Cislo", "Volba"), sep="\\. ", convert = TRUE )
+
+for (i in seq(1, nrow(df_okruhyVP))) {
+  df_okruhyVP$Zvoleno[i] <- sum(df_vp2$Volba == df_okruhyVP$text[i])
+}
+
+print(kable(df_okruhyVP %>% arrange(desc(Zvoleno)) %>% select(text, Zvoleno) , col.names = NULL))
+
+ggplot(data=df_okruhyVP, aes(x=i, y=Zvoleno)) +
+  geom_bar(stat="identity", width=0.5) + labs(x = "Číslo otázky", y = "Počet zvolení otázky", title = "Počty zvolení otázek v rámci SZZVP") 
+```
+
+Nejméně oblíbené byly otázky: 
+```{r, echo=FALSE, results = "asis"}
+print(kable(df_okruhyVP %>% arrange(Zvoleno) %>% select(text, Zvoleno) %>% head(5) , col.names = NULL))
+```
